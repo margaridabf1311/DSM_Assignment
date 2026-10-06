@@ -1,0 +1,38 @@
+{
+  "A": [
+    "T_lag1",
+    "H_lag1",
+    "P_lag1",
+    "W_lag1"
+  ],
+  "B": [
+    "T_lag1",
+    "H_lag1",
+    "P_lag1",
+    "W_lag1",
+    "T_delta",
+    "T_mean_6h",
+    "T_std_6h",
+    "T_mean_24h",
+    "T_std_24h",
+    "H_delta",
+    "H_mean_6h",
+    "H_std_6h",
+    "H_mean_24h",
+    "H_std_24h",
+    "P_delta",
+    "P_mean_6h",
+    "P_std_6h",
+    "P_mean_24h",
+    "P_std_24h",
+    "W_delta",
+    "W_mean_6h",
+    "W_std_6h",
+    "W_mean_24h",
+    "W_std_24h",
+    "rain_hours_24h",
+    "windy_hours_24h",
+    "adverse_hours_24h",
+    "precip_sum_6h"
+  ]
+}

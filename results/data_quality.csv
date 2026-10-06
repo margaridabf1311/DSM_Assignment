@@ -1,0 +1,7 @@
+city,period,rows,expected,missing_timestamps,duplicates,nulls,invalid_rh,invalid_wind,invalid_precip,wind_max
+Coimbra,warmup,8784,8784,0,0,0,0,0,0,40.7
+Coimbra,evaluation,15312,15312,0,0,0,0,0,0,50.1
+Coimbra,full,24096,24096,0,0,0,0,0,0,50.1
+Evora,warmup,8784,8784,0,0,0,0,0,0,41.8
+Evora,evaluation,15312,15312,0,0,0,0,0,0,47.6
+Evora,full,24096,24096,0,0,0,0,0,0,47.6

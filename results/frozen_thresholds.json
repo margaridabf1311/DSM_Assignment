@@ -1,0 +1,13 @@
+{
+  "tau_W_kmh": 16.4,
+  "wind_quantile": 0.8,
+  "rain_threshold_mm": 0.1,
+  "warmup_start": "2024-01-01 00:00:00",
+  "warmup_end": "2024-12-31 23:00:00",
+  "n_warmup_pooled": 17568,
+  "quantile_method": "pandas linear interpolation",
+  "cities": [
+    "Coimbra",
+    "Evora"
+  ]
+}
