@@ -1,0 +1,30 @@
+[
+  {
+    "city": "Coimbra",
+    "url": "https://archive-api.open-meteo.com/v1/archive?latitude=40.2089&longitude=-8.4292&start_date=2024-01-01&end_date=2026-09-30&hourly=temperature_2m%2Crelative_humidity_2m%2Cprecipitation%2Cwind_speed_10m&timezone=UTC&wind_speed_unit=kmh&precipitation_unit=mm&temperature_unit=celsius",
+    "retrieved_utc": "2026-10-06T20:33:42.448829+00:00",
+    "grid_lat": 40.175747,
+    "grid_lon": -8.457214,
+    "units": {
+      "time": "iso8601",
+      "temperature_2m": "\u00b0C",
+      "relative_humidity_2m": "%",
+      "precipitation": "mm",
+      "wind_speed_10m": "km/h"
+    }
+  },
+  {
+    "city": "Evora",
+    "url": "https://archive-api.open-meteo.com/v1/archive?latitude=38.5714&longitude=-7.904&start_date=2024-01-01&end_date=2026-09-30&hourly=temperature_2m%2Crelative_humidity_2m%2Cprecipitation%2Cwind_speed_10m&timezone=UTC&wind_speed_unit=kmh&precipitation_unit=mm&temperature_unit=celsius",
+    "retrieved_utc": "2026-10-06T20:33:43.878368+00:00",
+    "grid_lat": 38.558872,
+    "grid_lon": -7.9483643,
+    "units": {
+      "time": "iso8601",
+      "temperature_2m": "\u00b0C",
+      "relative_humidity_2m": "%",
+      "precipitation": "mm",
+      "wind_speed_10m": "km/h"
+    }
+  }
+]

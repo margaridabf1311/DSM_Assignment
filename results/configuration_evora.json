@@ -1,0 +1,58 @@
+{
+  "city": "evora",
+  "seed": 42,
+  "n_models": 5,
+  "learn_on_warmup": true,
+  "warmup_end": "2024-12-31 23:00:00",
+  "tau_W_kmh": 16.4,
+  "rows": 24072,
+  "python": "3.13.14",
+  "river": "0.26.1",
+  "pandas": "3.0.0",
+  "numpy": "2.4.2",
+  "models": {
+    "Gaussian Naive Bayes": "GaussianNB ()",
+    "Online Logistic Regression": "Pipeline (\n  StandardScaler (\n    with_std=True\n    window_size=None\n  ),\n  LogisticRegression (\n    optimizer=SGD (\n      lr=Constant (\n        learning_rate=0.01\n      )\n    )\n    loss=Log (\n      weight_pos=1.\n      weight_neg=1.\n    )\n    l2=0.\n    l1=0.\n    intercept_init=0.\n    intercept_lr=Constant (\n      learning_rate=0.01\n    )\n    clip_gradient=1e+12\n    initializer=Zeros ()\n  )\n)",
+    "Hoeffding Tree": "HoeffdingTreeClassifier (\n  grace_period=200\n  max_depth=980\n  split_criterion=\"info_gain\"\n  delta=1e-07\n  tau=0.05\n  leaf_prediction=\"nba\"\n  nb_threshold=0\n  nominal_attributes=None\n  splitter=GaussianSplitter (\n    n_splits=10\n  )\n  binary_split=False\n  min_branch_fraction=0.01\n  max_share_to_split=0.99\n  max_size=100.\n  memory_estimate_period=1000000\n  stop_mem_management=False\n  remove_poor_attrs=False\n  merit_preprune=True\n)",
+    "Online Bagging": "[HoeffdingTreeClassifier (\n  grace_period=200\n  max_depth=980\n  split_criterion=\"info_gain\"\n  delta=1e-07\n  tau=0.05\n  leaf_prediction=\"nba\"\n  nb_threshold=0\n  nominal_attributes=None\n  splitter=GaussianSplitter (\n    n_splits=10\n  )\n  binary_split=False\n  min_branch_fraction=0.01\n  max_share_to_split=0.99\n  max_size=100.\n  memory_estimate_period=1000000\n  stop_mem_management=False\n  remove_poor_attrs=False\n  merit_preprune=True\n), HoeffdingTreeClassifier (\n  grace_period=200\n  max_depth=980\n  split_criterion=\"info_gain\"\n  delta=1e-07\n  tau=0.05\n  leaf_prediction=\"nba\"\n  nb_threshold=0\n  nominal_attributes=None\n  splitter=GaussianSplitter (\n    n_splits=10\n  )\n  binary_split=False\n  min_branch_fraction=0.01\n  max_share_to_split=0.99\n  max_size=100.\n  memory_estimate_period=1000000\n  stop_mem_management=False\n  remove_poor_attrs=False\n  merit_preprune=True\n), HoeffdingTreeClassifier (\n  grace_period=200\n  max_depth=980\n  split_criterion=\"info_gain\"\n  delta=1e-07\n  tau=0.05\n  leaf_prediction=\"nba\"\n  nb_threshold=0\n  nominal_attributes=None\n  splitter=GaussianSplitter (\n    n_splits=10\n  )\n  binary_split=False\n  min_branch_fraction=0.01\n  max_share_to_split=0.99\n  max_size=100.\n  memory_estimate_period=1000000\n  stop_mem_management=False\n  remove_poor_attrs=False\n  merit_preprune=True\n), HoeffdingTreeClassifier (\n  grace_period=200\n  max_depth=980\n  split_criterion=\"info_gain\"\n  delta=1e-07\n  tau=0.05\n  leaf_prediction=\"nba\"\n  nb_threshold=0\n  nominal_attributes=None\n  splitter=GaussianSplitter (\n    n_splits=10\n  )\n  binary_split=False\n  min_branch_fraction=0.01\n  max_share_to_split=0.99\n  max_size=100.\n  memory_estimate_period=1000000\n  stop_mem_management=False\n  remove_poor_attrs=False\n  merit_preprune=True\n), HoeffdingTreeClassifier (\n  grace_period=200\n  max_depth=980\n  split_criterion=\"info_gain\"\n  delta=1e-07\n  tau=0.05\n  leaf_prediction=\"nba\"\n  nb_threshold=0\n  nominal_attributes=None\n  splitter=GaussianSplitter (\n    n_splits=10\n  )\n  binary_split=False\n  min_branch_fraction=0.01\n  max_share_to_split=0.99\n  max_size=100.\n  memory_estimate_period=1000000\n  stop_mem_management=False\n  remove_poor_attrs=False\n  merit_preprune=True\n)]",
+    "Adaptive Random Forest": "[]"
+  },
+  "feature_sets": {
+    "A": [
+      "T_lag1",
+      "H_lag1",
+      "P_lag1",
+      "W_lag1"
+    ],
+    "B": [
+      "T_lag1",
+      "H_lag1",
+      "P_lag1",
+      "W_lag1",
+      "T_delta",
+      "T_mean_6h",
+      "T_std_6h",
+      "T_mean_24h",
+      "T_std_24h",
+      "H_delta",
+      "H_mean_6h",
+      "H_std_6h",
+      "H_mean_24h",
+      "H_std_24h",
+      "P_delta",
+      "P_mean_6h",
+      "P_std_6h",
+      "P_mean_24h",
+      "P_std_24h",
+      "W_delta",
+      "W_mean_6h",
+      "W_std_6h",
+      "W_mean_24h",
+      "W_std_24h",
+      "rain_hours_24h",
+      "windy_hours_24h",
+      "adverse_hours_24h",
+      "precip_sum_6h"
+    ]
+  }
+}
