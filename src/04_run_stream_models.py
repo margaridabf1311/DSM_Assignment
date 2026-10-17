@@ -1,4 +1,4 @@
-"""Run prequential stream-model evaluation for Évora.
+"""Run prequential stream-model evaluation for Coimbra and Évora.
 
 This script compares feature representations A and B using five online
 classification models.
@@ -12,10 +12,10 @@ Workflow:
 5. Save metrics, predictions, and run configuration for later analysis.
 
 Outputs:
-- `results/metrics_evora.csv`: evaluation metrics and timing per representation
-- `results/predictions_evora_repA.csv` and `..._repB.csv`: evaluation predictions
-- `results/configuration_evora.json`: thresholds, package versions, and model setup
-- `results/timing_evora_runs.csv` and `results/timing_evora_summary.csv`: standalone timing results
+- `results/metrics_<city>.csv`: evaluation metrics and timing per representation
+- `results/predictions_<city>_repA.csv` and `..._repB.csv`: evaluation predictions
+- `results/configuration_<city>.json`: thresholds, package versions, and model setup
+- `results/timing_<city>_runs.csv` and `results/timing_<city>_summary.csv`: standalone timing results
 
 Set `SUBSET` to an integer to run only the first rows as a quick test.
 """
@@ -36,7 +36,7 @@ PROJECT_DIR = BASE_DIR.parent
 DATA_DIR = PROJECT_DIR / "data"
 RESULTS_DIR = PROJECT_DIR / "results"
 
-CITY = "evora"
+CITIES = ("coimbra", "evora")
 SEED = 42
 N_MODELS = 5
 LEARN_ON_WARMUP = True
@@ -49,7 +49,9 @@ def ensure_output_directory() -> None:
     RESULTS_DIR.mkdir(exist_ok=True)
 
 
-def load_inputs() -> tuple[pd.DataFrame, dict[str, list[str]], dict[str, Any], pd.Timestamp]:
+def load_inputs(
+    city: str,
+) -> tuple[pd.DataFrame, dict[str, list[str]], dict[str, Any], pd.Timestamp]:
     """Load processed data, feature definitions, and frozen threshold metadata.
 
     Returns:
@@ -61,7 +63,7 @@ def load_inputs() -> tuple[pd.DataFrame, dict[str, list[str]], dict[str, Any], p
     with (RESULTS_DIR / "feature_sets.json").open("r", encoding="utf-8") as fh:
         feature_sets = json.load(fh)
 
-    data = pd.read_csv(DATA_DIR / f"processed_{CITY}.csv", parse_dates=["time"])
+    data = pd.read_csv(DATA_DIR / f"processed_{city}.csv", parse_dates=["time"])
     data = data.sort_values("time").reset_index(drop=True)
     if SUBSET is not None:
         data = data.iloc[:SUBSET].copy()
@@ -123,6 +125,7 @@ def summarize(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float | int]:
 
 
 def evaluate_representation(
+    city: str,
     data: pd.DataFrame,
     columns: list[str],
     representation: str,
@@ -173,7 +176,7 @@ def evaluate_representation(
     for name in models:
         rows.append(
             {
-                "city": CITY,
+                "city": city,
                 "rep": representation,
                 "model": name,
                 "n_eval": n_evaluation,
@@ -192,7 +195,7 @@ def evaluate_representation(
     for name, baseline_predictions in baselines.items():
         rows.append(
             {
-                "city": CITY,
+                "city": city,
                 "rep": representation,
                 "model": name,
                 "n_eval": n_evaluation,
@@ -213,13 +216,14 @@ def evaluate_representation(
 
 
 def save_configuration(
+    city: str,
     frozen: dict[str, Any],
     feature_sets: dict[str, list[str]],
     row_count: int,
 ) -> None:
     """Write run settings and relevant package versions for reproducibility."""
     configuration = {
-        "city": CITY,
+        "city": city,
         "seed": SEED,
         "n_models": N_MODELS,
         "learn_on_warmup": LEARN_ON_WARMUP,
@@ -233,38 +237,40 @@ def save_configuration(
         "models": {name: repr(model) for name, model in make_models().items()},
         "feature_sets": feature_sets,
     }
-    with (RESULTS_DIR / f"configuration_{CITY}.json").open("w", encoding="utf-8") as fh:
+    with (RESULTS_DIR / f"configuration_{city}.json").open("w", encoding="utf-8") as fh:
         json.dump(configuration, fh, indent=2)
 
 
 def main() -> None:
     """Load inputs, evaluate both representations, and save all result files."""
     ensure_output_directory()
-    data, feature_sets, frozen, warmup_end = load_inputs()
-    is_warm = (data["time"] <= warmup_end).to_numpy()
-    y_all = data[TARGET].astype(int).to_numpy()
-    print(f"{CITY}: {len(data)} rows | warm-up={is_warm.sum()} | evaluation={(~is_warm).sum()}")
+    for city in CITIES:
+        data, feature_sets, frozen, warmup_end = load_inputs(city)
+        is_warm = (data["time"] <= warmup_end).to_numpy()
+        y_all = data[TARGET].astype(int).to_numpy()
+        print(f"{city}: {len(data)} rows | warm-up={is_warm.sum()} | evaluation={(~is_warm).sum()}")
 
-    metric_rows = []
-    for representation, columns in feature_sets.items():
-        rows, predictions = evaluate_representation(
-            data,
-            columns,
-            representation,
-            is_warm,
-            y_all,
-        )
-        metric_rows.extend(rows)
-        predictions.to_csv(
-            RESULTS_DIR / f"predictions_{CITY}_rep{representation}.csv",
-            index=False,
-        )
+        metric_rows = []
+        for representation, columns in feature_sets.items():
+            rows, predictions = evaluate_representation(
+                city,
+                data,
+                columns,
+                representation,
+                is_warm,
+                y_all,
+            )
+            metric_rows.extend(rows)
+            predictions.to_csv(
+                RESULTS_DIR / f"predictions_{city}_rep{representation}.csv",
+                index=False,
+            )
 
-    metrics = pd.DataFrame(metric_rows)
-    metrics.to_csv(RESULTS_DIR / f"metrics_{CITY}.csv", index=False)
-    print("\n", metrics.round(4).to_string(index=False))
+        metrics = pd.DataFrame(metric_rows)
+        metrics.to_csv(RESULTS_DIR / f"metrics_{city}.csv", index=False)
+        print("\n", metrics.round(4).to_string(index=False))
 
-    save_configuration(frozen, feature_sets, len(data))
+        save_configuration(city, frozen, feature_sets, len(data))
     print("\nSaved metrics, predictions, and configuration in results/.")
 
 
