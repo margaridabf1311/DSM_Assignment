@@ -1,4 +1,4 @@
-"""Analyse the cumulative model results for Évora.
+"""Analyse the cumulative model results for Coimbra and Évora.
 
 This script reads the metrics, predictions, and processed target history from
 the `results/` and `data/` folders beside this script. It compares
@@ -13,10 +13,10 @@ Workflow:
 5. Save comparison tables and figures for reporting.
 
 Outputs:
-- `results/analysis_evora_A_vs_B.csv`: model comparison between representations
-- `results/analysis_evora_bootstrap.csv`: bootstrap estimates and confidence intervals
-- `results/analysis_evora_monthly_macro_f1.csv`: monthly Macro-F1 results
-- `results/figures/evora_fig6_A_vs_B.png` through `evora_fig9_monthly_macro_f1.png`
+- `results/analysis_<city>_A_vs_B.csv`: model comparison between representations
+- `results/analysis_<city>_bootstrap.csv`: bootstrap estimates and confidence intervals
+- `results/analysis_<city>_monthly_macro_f1.csv`: monthly Macro-F1 results
+- `results/figures/<city>_fig6_A_vs_B.png` through `<city>_fig9_monthly_macro_f1.png`
 
 The block bootstrap uses one-week blocks by default to retain short-term temporal
 dependence. This script analyses existing results; it does not train models.
@@ -37,7 +37,7 @@ DATA_DIR = PROJECT_DIR / "data"
 RESULTS_DIR = PROJECT_DIR / "results"
 FIGURES_DIR = RESULTS_DIR / "figures"
 
-CITY = "evora"
+CITIES = ("coimbra", "evora")
 BLOCK_H = 168
 N_BOOT = 500
 SEED = 42
@@ -65,7 +65,9 @@ def ensure_directories() -> None:
     FIGURES_DIR.mkdir(exist_ok=True)
 
 
-def load_inputs() -> tuple[pd.DataFrame, dict[str, pd.DataFrame], np.ndarray, np.ndarray]:
+def load_inputs(
+    city: str,
+) -> tuple[pd.DataFrame, dict[str, pd.DataFrame], np.ndarray, np.ndarray]:
     """Load model metrics, predictions, and the aligned persistence baseline.
 
     Raises:
@@ -76,9 +78,9 @@ def load_inputs() -> tuple[pd.DataFrame, dict[str, pd.DataFrame], np.ndarray, np
         Metrics, prediction tables keyed by representation, true labels, and
         persistence-baseline predictions.
     """
-    metrics = pd.read_csv(RESULTS_DIR / f"metrics_{CITY}.csv")
+    metrics = pd.read_csv(RESULTS_DIR / f"metrics_{city}.csv")
     predictions = {
-        rep: pd.read_csv(RESULTS_DIR / f"predictions_{CITY}_rep{rep}.csv", parse_dates=["time"])
+        rep: pd.read_csv(RESULTS_DIR / f"predictions_{city}_rep{rep}.csv", parse_dates=["time"])
         for rep in ("A", "B")
     }
 
@@ -92,7 +94,7 @@ def load_inputs() -> tuple[pd.DataFrame, dict[str, pd.DataFrame], np.ndarray, np
     if len(y_true) == 0:
         raise ValueError("Prediction files contain no evaluation rows.")
 
-    processed = pd.read_csv(DATA_DIR / f"processed_{CITY}.csv", parse_dates=["time"])
+    processed = pd.read_csv(DATA_DIR / f"processed_{city}.csv", parse_dates=["time"])
     target_history = processed.set_index("time")["target_T6"]
     persistence = target_history.shift(1).reindex(predictions["A"]["time"]).to_numpy(dtype=int)
     return metrics, predictions, y_true, persistence
@@ -127,7 +129,7 @@ def macro_f1(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return (f1_event + f1_nonevent) / 2
 
 
-def compare_representations(metrics: pd.DataFrame) -> pd.DataFrame:
+def compare_representations(metrics: pd.DataFrame, city: str) -> pd.DataFrame:
     """Build and save the per-model comparison of feature sets A and B."""
     rows = []
     for model in MODELS:
@@ -152,7 +154,7 @@ def compare_representations(metrics: pd.DataFrame) -> pd.DataFrame:
         )
 
     comparison = pd.DataFrame(rows)
-    comparison.to_csv(RESULTS_DIR / f"analysis_{CITY}_A_vs_B.csv", index=False)
+    comparison.to_csv(RESULTS_DIR / f"analysis_{city}_A_vs_B.csv", index=False)
     print(comparison.round(4).to_string(index=False))
     return comparison
 
@@ -161,6 +163,7 @@ def bootstrap_comparisons(
     predictions: dict[str, pd.DataFrame],
     y_true: np.ndarray,
     persistence: np.ndarray,
+    city: str,
 ) -> pd.DataFrame:
     """Estimate Macro-F1 confidence intervals using a moving-block bootstrap."""
     rng = np.random.default_rng(SEED)
@@ -245,7 +248,7 @@ def bootstrap_comparisons(
         }
     )
     result = pd.DataFrame(rows)
-    result.to_csv(RESULTS_DIR / f"analysis_{CITY}_bootstrap.csv", index=False)
+    result.to_csv(RESULTS_DIR / f"analysis_{city}_bootstrap.csv", index=False)
     print("\n", result.round(4).to_string(index=False))
     return result
 
@@ -254,6 +257,7 @@ def save_monthly_scores(
     predictions: dict[str, pd.DataFrame],
     y_true: np.ndarray,
     persistence: np.ndarray,
+    city: str,
 ) -> pd.DataFrame:
     """Calculate and save monthly Macro-F1 scores for both representations."""
     months = predictions["A"]["time"].dt.to_period("M").astype(str).to_numpy()
@@ -283,11 +287,16 @@ def save_monthly_scores(
             )
 
     monthly = pd.DataFrame(rows)
-    monthly.to_csv(RESULTS_DIR / f"analysis_{CITY}_monthly_macro_f1.csv", index=False)
+    monthly.to_csv(RESULTS_DIR / f"analysis_{city}_monthly_macro_f1.csv", index=False)
     return monthly
 
 
-def save_figures(metrics: pd.DataFrame, predictions: dict[str, pd.DataFrame], monthly: pd.DataFrame) -> None:
+def save_figures(
+    metrics: pd.DataFrame,
+    predictions: dict[str, pd.DataFrame],
+    monthly: pd.DataFrame,
+    city: str,
+) -> None:
     """Generate the representation, confusion-matrix, cost, and monthly plots."""
     positions = np.arange(len(MODELS))
     bar_width = 0.38
@@ -320,9 +329,9 @@ def save_figures(metrics: pd.DataFrame, predictions: dict[str, pd.DataFrame], mo
         axis.set_title(title)
         axis.set_ylim(0, 1)
     axes[0].legend(fontsize=8)
-    fig.suptitle(f"{CITY.title()} - Representation A vs B")
+    fig.suptitle(f"{city.title()} - Representation A vs B")
     fig.tight_layout()
-    fig.savefig(FIGURES_DIR / f"{CITY}_fig6_A_vs_B.png", dpi=150)
+    fig.savefig(FIGURES_DIR / f"{city}_fig6_A_vs_B.png", dpi=150)
     plt.close(fig)
 
     # Confusion matrices are normalised by the true class; annotations show counts.
@@ -354,9 +363,9 @@ def save_figures(metrics: pd.DataFrame, predictions: dict[str, pd.DataFrame], mo
             axes[row, column].set_xticklabels(["prev. 0", "prev. 1"])
             axes[row, column].set_yticklabels(["real 0", "real 1"])
             axes[row, column].set_title(f"{SHORT[model]} ({rep})", fontsize=10)
-    fig.suptitle(f"{CITY.title()} - Confusion matrices (percentage by true class)")
+    fig.suptitle(f"{city.title()} - Confusion matrices (percentage by true class)")
     fig.tight_layout()
-    fig.savefig(FIGURES_DIR / f"{CITY}_fig7_confusion.png", dpi=150)
+    fig.savefig(FIGURES_DIR / f"{city}_fig7_confusion.png", dpi=150)
     plt.close(fig)
 
     # Compare per-event computational cost with Macro-F1.
@@ -377,10 +386,10 @@ def save_figures(metrics: pd.DataFrame, predictions: dict[str, pd.DataFrame], mo
     axis.set_xscale("log")
     axis.set_xlabel("Cost per event: prediction + update (ms, log scale)")
     axis.set_ylabel("Macro-F1")
-    axis.set_title(f"{CITY.title()} - Cost vs. performance (circle = A, square = B)")
+    axis.set_title(f"{city.title()} - Cost vs. performance (circle = A, square = B)")
     axis.legend(fontsize=8)
     fig.tight_layout()
-    fig.savefig(FIGURES_DIR / f"{CITY}_fig8_cost_performance.png", dpi=150)
+    fig.savefig(FIGURES_DIR / f"{city}_fig8_cost_performance.png", dpi=150)
     plt.close(fig)
 
     # Show monthly Macro-F1 trends for both feature representations.
@@ -400,20 +409,21 @@ def save_figures(metrics: pd.DataFrame, predictions: dict[str, pd.DataFrame], mo
         axis.set_ylabel(f"Macro-F1 (Repr. {rep})")
     axes[0].legend(fontsize=7, ncol=3)
     plt.setp(axes[1].get_xticklabels(), rotation=60, fontsize=7)
-    fig.suptitle(f"{CITY.title()} - Monthly Macro-F1 during evaluation")
+    fig.suptitle(f"{city.title()} - Monthly Macro-F1 during evaluation")
     fig.tight_layout()
-    fig.savefig(FIGURES_DIR / f"{CITY}_fig9_monthly_macro_f1.png", dpi=150)
+    fig.savefig(FIGURES_DIR / f"{city}_fig9_monthly_macro_f1.png", dpi=150)
     plt.close(fig)
 
 
 def main() -> None:
     """Run the result comparisons, bootstrap, monthly analysis, and plotting."""
     ensure_directories()
-    metrics, predictions, y_true, persistence = load_inputs()
-    compare_representations(metrics)
-    bootstrap_comparisons(predictions, y_true, persistence)
-    monthly = save_monthly_scores(predictions, y_true, persistence)
-    save_figures(metrics, predictions, monthly)
+    for city in CITIES:
+        metrics, predictions, y_true, persistence = load_inputs(city)
+        compare_representations(metrics, city)
+        bootstrap_comparisons(predictions, y_true, persistence, city)
+        monthly = save_monthly_scores(predictions, y_true, persistence, city)
+        save_figures(metrics, predictions, monthly, city)
     print("\nTables saved to results/analysis_*.csv | figures saved to results/figures/")
 
 

@@ -1,18 +1,19 @@
 """Build the T6 target and feature representations A and B.
 
-This script reads Évora's raw weather data and the frozen thresholds created by
-the warm-up script. Features at time t use only information available before t.
+This script reads each city's raw weather data and the frozen thresholds
+created by the warm-up script. Features at time t use only information
+available before t.
 
 Workflow:
 1. Load the frozen rain and wind thresholds.
-2. Build the T6 target and feature representations for Évora.
+2. Build the T6 target and feature representations for both cities.
 3. Check that changing weather values at t does not change features at t.
 4. Remove rows with incomplete lag or rolling-window features.
 5. Save the processed data, evaluation stream, and feature-set definitions.
 
 Outputs:
-- `data/processed_evora.csv`: complete feature table with the target
-- `data/eval_stream_evora.csv`: evaluation-period rows only
+- `data/processed_<city>.csv`: complete feature table with the target
+- `data/eval_stream_<city>.csv`: evaluation-period rows only
 - `results/feature_sets.json`: column names for representations A and B
 """
 
@@ -27,7 +28,7 @@ PROJECT_DIR = BASE_DIR.parent
 DATA_DIR = PROJECT_DIR / "data"
 RESULTS_DIR = PROJECT_DIR / "results"
 
-CITY = "evora"
+CITIES = ("coimbra", "evora")
 RAW_VARIABLES = {
     "temperature": "T",
     "relative_humidity": "H",
@@ -133,15 +134,16 @@ def check_no_leakage(
 
 
 def process_city(
+    city: str,
     tau_w: float,
     rain_threshold: float,
     warmup_end: pd.Timestamp,
 ) -> tuple[list[str], list[str]]:
-    """Build, validate, and save the feature data for Évora.
+    """Build, validate, and save the feature data for one city.
 
     Returns the column names in feature representations A and B.
     """
-    raw_path = DATA_DIR / f"raw_{CITY}.csv"
+    raw_path = DATA_DIR / f"raw_{city}.csv"
     raw = pd.read_csv(raw_path, parse_dates=["time"])
     check_no_leakage(raw, tau_w, rain_threshold)
 
@@ -150,25 +152,35 @@ def process_city(
     evaluation = clean[clean["time"] > warmup_end].reset_index(drop=True)
     warmup = clean[clean["time"] <= warmup_end]
 
-    clean.to_csv(DATA_DIR / f"processed_{CITY}.csv", index=False)
-    evaluation.to_csv(DATA_DIR / f"eval_stream_{CITY}.csv", index=False)
+    clean.to_csv(DATA_DIR / f"processed_{city}.csv", index=False)
+    evaluation.to_csv(DATA_DIR / f"eval_stream_{city}.csv", index=False)
 
     warmup_rate = warmup["target_T6"].mean()
     evaluation_rate = evaluation["target_T6"].mean()
     print(
-        f"{CITY}: warm-up={len(warmup)}h | evaluation={len(evaluation)}h | "
+        f"{city}: warm-up={len(warmup)}h | evaluation={len(evaluation)}h | "
         f"T6 warm-up={warmup_rate:.1%} | T6 evaluation={evaluation_rate:.1%}"
     )
     return representation_a, representation_b
 
 
 def main() -> None:
-    """Build and save Évora's feature data and feature-set definitions."""
+    """Build and save both cities' feature data and shared feature definitions."""
     ensure_directories()
     tau_w, rain_threshold, warmup_end = load_frozen_thresholds()
 
-    representation_a, representation_b = process_city(tau_w, rain_threshold, warmup_end)
-    feature_sets = {"A": representation_a, "B": representation_b}
+    feature_sets: dict[str, list[str]] | None = None
+    for city in CITIES:
+        representation_a, representation_b = process_city(
+            city,
+            tau_w,
+            rain_threshold,
+            warmup_end,
+        )
+        city_feature_sets = {"A": representation_a, "B": representation_b}
+        if feature_sets is not None and city_feature_sets != feature_sets:
+            raise ValueError(f"Feature definitions differ for {city}.")
+        feature_sets = city_feature_sets
 
     with (RESULTS_DIR / "feature_sets.json").open("w", encoding="utf-8") as fh:
         json.dump(feature_sets, fh, indent=2)

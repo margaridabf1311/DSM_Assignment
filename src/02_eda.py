@@ -1,7 +1,7 @@
-﻿"""Exploratory analysis for the Évora stream dataset.
+"""Exploratory analysis for the Coimbra and Évora stream datasets.
 
-This script loads hourly weather data for a selected city, labels adverse hours
-using the frozen warm-up thresholds, and creates descriptive tables and figures.
+This script loads hourly weather data for each city, labels adverse hours using
+the frozen pooled warm-up thresholds, and creates descriptive tables and figures.
 
 Workflow:
 1. Load the raw city data and frozen thresholds.
@@ -34,7 +34,7 @@ DATA_DIR = PROJECT_DIR / "data"
 RESULTS_DIR = PROJECT_DIR / "results"
 FIGURES_DIR = RESULTS_DIR / "figures"
 
-CITY = "evora"
+CITIES = ("coimbra", "evora")
 EVENING_HOURS = (21, 22, 23)  # Assumption: session hours in local time.
 SEASON_MONTHS = (5, 6, 7, 8, 9)  # Assumption: outdoor-cinema season.
 ROLL_H = 24 * 30
@@ -277,21 +277,21 @@ def plot_rolling_rate(df: pd.DataFrame, warm_end: pd.Timestamp, city: str) -> No
 
 
 def main() -> None:
-    """Run the full exploratory workflow for the selected city.
+    """Run the full exploratory workflow for both cities.
 
-    The script loads the data, creates the descriptive outputs, and generates all
-    exploratory figures in one pass.
+    Each city's data produces its own descriptive outputs and exploratory figures.
     """
     ensure_directories()
     tau_w, rain_threshold, warm_end = load_frozen_thresholds()
-    df = load_city_data(CITY, tau_w, rain_threshold, warm_end)
-    adverse_runs, free_runs = save_summary_tables(df, CITY)
+    for city in CITIES:
+        df = load_city_data(city, tau_w, rain_threshold, warm_end)
+        adverse_runs, free_runs = save_summary_tables(df, city)
 
-    plot_temporal_series(df, tau_w, warm_end, CITY)
-    plot_event_by_hour(df, CITY)
-    plot_monthly_event_rates(df, CITY)
-    plot_run_lengths(adverse_runs, free_runs, CITY)
-    plot_rolling_rate(df, warm_end, CITY)
+        plot_temporal_series(df, tau_w, warm_end, city)
+        plot_event_by_hour(df, city)
+        plot_monthly_event_rates(df, city)
+        plot_run_lengths(adverse_runs, free_runs, city)
+        plot_rolling_rate(df, warm_end, city)
 
     print("\nTabelas em results/eda_*.csv | figuras em results/figures/")
 
