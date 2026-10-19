@@ -1,7 +1,7 @@
 """Analyse the cumulative model results for Coimbra and Évora.
 
 This script reads the metrics, predictions, and processed target history from
-the `results/` and `data/` folders beside this script. It compares
+the project's `results/` and `data/` folders. It compares
 feature representations A and B, estimates uncertainty with a moving-block
 bootstrap, and examines model performance over time.
 
@@ -360,8 +360,8 @@ def save_figures(
                     )
             axes[row, column].set_xticks([0, 1])
             axes[row, column].set_yticks([0, 1])
-            axes[row, column].set_xticklabels(["prev. 0", "prev. 1"])
-            axes[row, column].set_yticklabels(["real 0", "real 1"])
+            axes[row, column].set_xticklabels(["Predicted 0", "Predicted 1"])
+            axes[row, column].set_yticklabels(["Actual 0", "Actual 1"])
             axes[row, column].set_title(f"{SHORT[model]} ({rep})", fontsize=10)
     fig.suptitle(f"{city.title()} - Confusion matrices (percentage by true class)")
     fig.tight_layout()

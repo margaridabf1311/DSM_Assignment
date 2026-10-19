@@ -5,7 +5,7 @@ classification models.
 
 Workflow:
 1. Load processed feature data, feature-set definitions, and the frozen cutoff
-   from the `data/` and `results/` folders beside this script.
+   from the project's `data/` and `results/` folders.
 2. Create fresh model instances for each feature representation.
 3. Evaluate each model sequentially, optionally learning from warm-up rows.
 4. Compare model results with majority-class and persistence baselines.
@@ -15,11 +15,11 @@ Outputs:
 - `results/metrics_<city>.csv`: evaluation metrics and timing per representation
 - `results/predictions_<city>_repA.csv` and `..._repB.csv`: evaluation predictions
 - `results/configuration_<city>.json`: thresholds, package versions, and model setup
-- `results/timing_<city>_runs.csv` and `results/timing_<city>_summary.csv`: standalone timing results
 
 Set `SUBSET` to an integer to run only the first rows as a quick test.
 """
 
+import inspect
 import json
 import platform
 import time
@@ -84,6 +84,35 @@ def make_models() -> dict[str, Any]:
             seed=SEED,
         ),
         "Adaptive Random Forest": forest.ARFClassifier(n_models=N_MODELS, seed=SEED),
+    }
+
+
+def serialize_parameter(value: Any) -> Any:
+    """Convert estimator parameters and nested River components to JSON values."""
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, (list, tuple)):
+        return [serialize_parameter(item) for item in value]
+
+    parameters = {}
+    for name in inspect.signature(type(value)).parameters:
+        if name != "cm" and hasattr(value, name):
+            parameters[name] = serialize_parameter(getattr(value, name))
+    return {
+        "class": f"{type(value).__module__}.{type(value).__qualname__}",
+        "parameters": parameters,
+    }
+
+
+def estimator_parameters(estimator: Any) -> dict[str, Any]:
+    """Return the constructor parameters configured on a River estimator."""
+    parameters = {
+        name: serialize_parameter(getattr(estimator, name))
+        for name in inspect.signature(type(estimator)).parameters
+    }
+    return {
+        "class": f"{type(estimator).__module__}.{type(estimator).__qualname__}",
+        "parameters": parameters,
     }
 
 
@@ -222,6 +251,7 @@ def save_configuration(
     row_count: int,
 ) -> None:
     """Write run settings and relevant package versions for reproducibility."""
+    adaptive_random_forest = make_models()["Adaptive Random Forest"]
     configuration = {
         "city": city,
         "seed": SEED,
@@ -235,6 +265,7 @@ def save_configuration(
         "pandas": version("pandas"),
         "numpy": version("numpy"),
         "models": {name: repr(model) for name, model in make_models().items()},
+        "adaptive_random_forest": estimator_parameters(adaptive_random_forest),
         "feature_sets": feature_sets,
     }
     with (RESULTS_DIR / f"configuration_{city}.json").open("w", encoding="utf-8") as fh:
