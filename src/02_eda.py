@@ -1,4 +1,4 @@
-"""Exploratory analysis for the Coimbra and Évora stream datasets.
+﻿"""Exploratory analysis for the Coimbra and Évora stream datasets.
 
 This script loads hourly weather data for each city, labels adverse hours using
 the frozen pooled warm-up thresholds, and creates descriptive tables and figures.
@@ -15,6 +15,7 @@ Outputs:
 - `results/eda_<city>_extremes.csv`: highest wind and precipitation records
 - `results/eda_<city>_run_lengths.csv`: adverse and event-free run statistics
 - `results/eda_<city>_evenings_by_year.csv` and `..._by_month.csv`: session summaries
+- `results/eda_<city>_rolling.csv`: rolling event-rate summary
 - `results/figures/<city>_fig*.png`: exploratory plots
 """
 
@@ -35,8 +36,8 @@ RESULTS_DIR = PROJECT_DIR / "results"
 FIGURES_DIR = RESULTS_DIR / "figures"
 
 CITIES = ("coimbra", "evora")
-EVENING_HOURS = (21, 22, 23)  # Assumption: session hours in local time.
-SEASON_MONTHS = (5, 6, 7, 8, 9)  # Assumption: outdoor-cinema season.
+EVENING_HOURS = (21, 22, 23)  
+SEASON_MONTHS = (5, 6, 7, 8, 9)  
 ROLL_H = 24 * 30
 VARS = ["temperature", "relative_humidity", "precipitation", "wind_speed"]
 
@@ -185,10 +186,10 @@ def plot_temporal_series(df: pd.DataFrame, tau_w: float, warm_end: pd.Timestamp,
     for axis, (column, label) in zip(
         ax,
         [
-            ("temperature", "Temperatura média diária (°C)"),
-            ("relative_humidity", "Humidade relativa média (%)"),
-            ("precipitation", "Precipitação diária (mm)"),
-            ("wind_speed", "Vento máximo diário (km/h)"),
+            ("temperature", "Mean daily temperature (°C)"),
+            ("relative_humidity", "Mean relative humidity (%)"),
+            ("precipitation", "Daily precipitation (mm)"),
+            ("wind_speed", "Maximum wind speed (km/h)"),
         ],
     ):
         axis.plot(daily.index, daily[column], lw=0.8)
@@ -196,7 +197,7 @@ def plot_temporal_series(df: pd.DataFrame, tau_w: float, warm_end: pd.Timestamp,
         axis.axvline(warm_end, color="k", ls="--", lw=0.8)
     ax[3].axhline(tau_w, color="r", ls=":", label=f"tau_W = {tau_w:.1f} km/h")
     ax[3].legend(fontsize=8)
-    fig.suptitle(f"{city.title()} - evolução temporal (linha tracejada = fim do warm-up)")
+    fig.suptitle(f"{city.title()} - Daily weather trends (dashed line = end of warm-up)")
     fig.tight_layout()
     fig.savefig(FIGURES_DIR / f"{city}_fig1_temporal.png", dpi=150)
     plt.close(fig)
@@ -211,11 +212,11 @@ def plot_event_by_hour(df: pd.DataFrame, city: str) -> None:
     hour_rates = df.groupby("hour_local")[["T6", "rain", "wind"]].mean()
     fig, axis = plt.subplots(figsize=(8, 4))
     hour_rates.plot(ax=axis, marker="o")
-    axis.axvspan(min(EVENING_HOURS) - 0.5, max(EVENING_HOURS) + 0.5, color="orange", alpha=0.2, label="janela da sessão")
-    axis.set_xlabel("Hora local (Europe/Lisbon)")
-    axis.set_ylabel("Taxa de evento")
+    axis.axvspan(min(EVENING_HOURS) - 0.5, max(EVENING_HOURS) + 0.5, color="orange", alpha=0.2, label="Session hours")
+    axis.set_xlabel("Local hour (Europe/Lisbon)")
+    axis.set_ylabel("Event rate")
     axis.legend()
-    axis.set_title(f"{city.title()} - taxa de evento por hora do dia")
+    axis.set_title(f"{city.title()} - Event rate by hour of day")
     fig.tight_layout()
     fig.savefig(FIGURES_DIR / f"{city}_fig2_hour_of_day.png", dpi=150)
     plt.close(fig)
@@ -226,17 +227,23 @@ def plot_monthly_event_rates(df: pd.DataFrame, city: str) -> None:
 
     The stacked bars show how often events are driven by rain, wind, or both.
     """
-    counts = df.groupby(["ym", "kind"]).size().unstack(fill_value=0).reindex(
-        columns=["rain only", "wind only", "rain+wind", "none"],
-        fill_value=0,
+    months = df["time"].dt.strftime("%Y-%m")
+    counts = (
+        df.assign(month=months)
+        .groupby(["month", "kind"])
+        .size()
+        .unstack(fill_value=0)
+        .reindex(columns=["rain only", "wind only", "rain+wind", "none"], fill_value=0)
     )
     rate = counts.div(counts.sum(axis=1), axis=0)[["rain only", "wind only", "rain+wind"]]
     fig, axis = plt.subplots(figsize=(11, 4))
     rate.plot(kind="bar", stacked=True, ax=axis, width=0.85)
-    first_eval = df.loc[df["period"] == "evaluation", "ym"].iloc[0]
+    first_eval = months[df["period"] == "evaluation"].iloc[0]
     axis.axvline(list(rate.index).index(first_eval) - 0.5, color="k", ls="--", lw=0.8)
-    axis.set_ylabel("Fração de horas")
-    axis.set_title(f"{city.title()} - taxa mensal de T6 (tracejado = início da avaliação)")
+    axis.set_xlabel("Month")
+    axis.set_ylabel("Fraction of hours")
+    axis.legend(title="Event type")
+    axis.set_title(f"{city.title()} - Monthly T6 event composition (dashed line = start of evaluation)")
     fig.tight_layout()
     fig.savefig(FIGURES_DIR / f"{city}_fig3_monthly.png", dpi=150)
     plt.close(fig)
@@ -249,12 +256,12 @@ def plot_run_lengths(adverse_runs: np.ndarray, free_runs: np.ndarray, city: str)
     """
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
     axes[0].hist(np.clip(adverse_runs, 0, 48), bins=48)
-    axes[0].set_title("Sequências adversas (h, truncado a 48)")
+    axes[0].set_title("Adverse-event runs (hours, capped at 48)")
     axes[1].hist(np.clip(free_runs, 0, 72), bins=72)
-    axes[1].set_title("Janelas sem evento (h, truncado a 72)")
+    axes[1].set_title("Event-free runs (hours, capped at 72)")
     for axis in axes:
-        axis.set_xlabel("Duração (h)")
-        axis.set_ylabel("Nº de sequências")
+        axis.set_xlabel("Duration (hours)")
+        axis.set_ylabel("Number of runs")
     fig.tight_layout()
     fig.savefig(FIGURES_DIR / f"{city}_fig4_run_lengths.png", dpi=150)
     plt.close(fig)
@@ -266,11 +273,27 @@ def plot_rolling_rate(df: pd.DataFrame, warm_end: pd.Timestamp, city: str) -> No
     This highlights whether adverse conditions become more or less frequent over time.
     """
     rolling = df.set_index("time")["T6"].rolling(ROLL_H).mean()
+
+    evaluation = rolling[rolling.index >= warm_end + pd.Timedelta(hours=ROLL_H)].dropna()
+    pd.DataFrame(
+        [
+            {
+                "window_h": ROLL_H,
+                "min": evaluation.min(),
+                "min_window_end": evaluation.idxmin(),
+                "max": evaluation.max(),
+                "max_window_end": evaluation.idxmax(),
+                "mean": evaluation.mean(),
+                "std": evaluation.std(),
+            }
+        ]
+    ).to_csv(RESULTS_DIR / f"eda_{city}_rolling.csv", index=False)
+    
     fig, axis = plt.subplots(figsize=(11, 3.5))
     axis.plot(rolling.index, rolling.values)
     axis.axvline(warm_end, color="k", ls="--", lw=0.8)
-    axis.set_ylabel("Taxa T6 (30 dias)")
-    axis.set_title(f"{city.title()} - taxa rolante do evento")
+    axis.set_ylabel("T6 event rate (30-day rolling)")
+    axis.set_title(f"{city.title()} - Rolling adverse-event rate")
     fig.tight_layout()
     fig.savefig(FIGURES_DIR / f"{city}_fig5_rolling_rate.png", dpi=150)
     plt.close(fig)

@@ -17,6 +17,57 @@
     "Online Bagging": "[HoeffdingTreeClassifier (\n  grace_period=200\n  max_depth=980\n  split_criterion=\"info_gain\"\n  delta=1e-07\n  tau=0.05\n  leaf_prediction=\"nba\"\n  nb_threshold=0\n  nominal_attributes=None\n  splitter=GaussianSplitter (\n    n_splits=10\n  )\n  binary_split=False\n  min_branch_fraction=0.01\n  max_share_to_split=0.99\n  max_size=100.\n  memory_estimate_period=1000000\n  stop_mem_management=False\n  remove_poor_attrs=False\n  merit_preprune=True\n), HoeffdingTreeClassifier (\n  grace_period=200\n  max_depth=980\n  split_criterion=\"info_gain\"\n  delta=1e-07\n  tau=0.05\n  leaf_prediction=\"nba\"\n  nb_threshold=0\n  nominal_attributes=None\n  splitter=GaussianSplitter (\n    n_splits=10\n  )\n  binary_split=False\n  min_branch_fraction=0.01\n  max_share_to_split=0.99\n  max_size=100.\n  memory_estimate_period=1000000\n  stop_mem_management=False\n  remove_poor_attrs=False\n  merit_preprune=True\n), HoeffdingTreeClassifier (\n  grace_period=200\n  max_depth=980\n  split_criterion=\"info_gain\"\n  delta=1e-07\n  tau=0.05\n  leaf_prediction=\"nba\"\n  nb_threshold=0\n  nominal_attributes=None\n  splitter=GaussianSplitter (\n    n_splits=10\n  )\n  binary_split=False\n  min_branch_fraction=0.01\n  max_share_to_split=0.99\n  max_size=100.\n  memory_estimate_period=1000000\n  stop_mem_management=False\n  remove_poor_attrs=False\n  merit_preprune=True\n), HoeffdingTreeClassifier (\n  grace_period=200\n  max_depth=980\n  split_criterion=\"info_gain\"\n  delta=1e-07\n  tau=0.05\n  leaf_prediction=\"nba\"\n  nb_threshold=0\n  nominal_attributes=None\n  splitter=GaussianSplitter (\n    n_splits=10\n  )\n  binary_split=False\n  min_branch_fraction=0.01\n  max_share_to_split=0.99\n  max_size=100.\n  memory_estimate_period=1000000\n  stop_mem_management=False\n  remove_poor_attrs=False\n  merit_preprune=True\n), HoeffdingTreeClassifier (\n  grace_period=200\n  max_depth=980\n  split_criterion=\"info_gain\"\n  delta=1e-07\n  tau=0.05\n  leaf_prediction=\"nba\"\n  nb_threshold=0\n  nominal_attributes=None\n  splitter=GaussianSplitter (\n    n_splits=10\n  )\n  binary_split=False\n  min_branch_fraction=0.01\n  max_share_to_split=0.99\n  max_size=100.\n  memory_estimate_period=1000000\n  stop_mem_management=False\n  remove_poor_attrs=False\n  merit_preprune=True\n)]",
     "Adaptive Random Forest": "[]"
   },
+  "adaptive_random_forest": {
+    "class": "river.forest.adaptive_random_forest.ARFClassifier",
+    "parameters": {
+      "n_models": 5,
+      "max_features": "sqrt",
+      "lambda_value": 6,
+      "metric": {
+        "class": "river.metrics.accuracy.Accuracy",
+        "parameters": {}
+      },
+      "disable_weighted_vote": false,
+      "drift_detector": {
+        "class": "river.drift.adwin.ADWIN",
+        "parameters": {
+          "delta": 0.001,
+          "clock": 32,
+          "max_buckets": 5,
+          "min_window_length": 5,
+          "grace_period": 10
+        }
+      },
+      "warning_detector": {
+        "class": "river.drift.adwin.ADWIN",
+        "parameters": {
+          "delta": 0.01,
+          "clock": 32,
+          "max_buckets": 5,
+          "min_window_length": 5,
+          "grace_period": 10
+        }
+      },
+      "grace_period": 50,
+      "max_depth": null,
+      "split_criterion": "info_gain",
+      "delta": 0.01,
+      "tau": 0.05,
+      "leaf_prediction": "nba",
+      "nb_threshold": 0,
+      "nominal_attributes": null,
+      "splitter": null,
+      "binary_split": false,
+      "min_branch_fraction": 0.01,
+      "max_share_to_split": 0.99,
+      "max_size": 100.0,
+      "memory_estimate_period": 2000000,
+      "stop_mem_management": false,
+      "remove_poor_attrs": false,
+      "merit_preprune": true,
+      "seed": 42
+    }
+  },
   "feature_sets": {
     "A": [
       "T_lag1",
