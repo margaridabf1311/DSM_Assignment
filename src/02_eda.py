@@ -298,6 +298,37 @@ def plot_rolling_rate(df: pd.DataFrame, warm_end: pd.Timestamp, city: str) -> No
     fig.savefig(FIGURES_DIR / f"{city}_fig5_rolling_rate.png", dpi=150)
     plt.close(fig)
 
+def plot_comparative_monthly_t6(tau_w: float, rain_threshold: float, warm_end: pd.Timestamp) -> None:
+    """Plot a monthly comparison of overall T6 event rates between both cities.
+    
+    This compares Coimbra and Évora side-by-side across months without 
+    breaking down the event types into categories.
+    """
+    monthly_rates = {}
+    for city in CITIES:
+        df = load_city_data(city, tau_w, rain_threshold, warm_end)
+        months = df["time"].dt.strftime("%Y-%m")
+        monthly_rates[city] = df.assign(month=months).groupby("month")["T6"].mean()
+
+    combined = pd.DataFrame(monthly_rates)
+    
+    fig, axis = plt.subplots(figsize=(12, 4.5))
+    combined.plot(kind="bar", ax=axis, width=0.8)
+    
+    # Mark the start of evaluation based on the first month containing evaluation data
+    first_eval_month = pd.read_csv(DATA_DIR / f"raw_{CITIES[0]}.csv", parse_dates=["time"])
+    first_eval_month = first_eval_month[first_eval_month["time"] > warm_end]["time"].dt.strftime("%Y-%m").iloc[0]
+    if first_eval_month in combined.index:
+        axis.axvline(list(combined.index).index(first_eval_month) - 0.5, color="k", ls="--", lw=0.8)
+
+    axis.set_xlabel("Month")
+    axis.set_ylabel("T6 Event Rate (Fraction of hours)")
+    axis.legend(["Coimbra", "Évora"], title="City")
+    axis.set_title("Comparative Monthly T6 Event Rate — Coimbra vs Évora (dashed line = start of evaluation)")
+    
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "comparative_monthly_t6.png", dpi=150)
+    plt.close(fig)
 
 def main() -> None:
     """Run the full exploratory workflow for both cities.
@@ -315,8 +346,10 @@ def main() -> None:
         plot_monthly_event_rates(df, city)
         plot_run_lengths(adverse_runs, free_runs, city)
         plot_rolling_rate(df, warm_end, city)
-
+# Generate the new comparative cross-city figure
+    plot_comparative_monthly_t6(tau_w, rain_threshold, warm_end)
     print("\nTabelas em results/eda_*.csv | figuras em results/figures/")
+   
 
 
 if __name__ == "__main__":
