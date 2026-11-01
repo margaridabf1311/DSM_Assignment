@@ -1,0 +1,4 @@
+river==0.26.1
+pandas==3.0.0
+numpy==2.4.2
+matplotlib
